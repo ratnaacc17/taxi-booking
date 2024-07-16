@@ -7,8 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
+    runs-on: ec2-user
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,5 +34,11 @@ jobs:
 
       - name: Pull and run Docker image on EC2
         run: |
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "docker pull <your-account-id>.dkr.ecr.<your-region>.amazonaws.com/<your-repository>:latest"
-          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "docker run -d -p 80:80 <your-account-id>.dkr.ecr.<your-region>.amazonaws.com/<your-repository>:latest"
+            sudo apt update
+            sudo apt install docker.io -y
+            sudo apt install awscli -y
+            sudo $(aws ecr get-login --no-include-email --region ap-south-1);
+            sudo docker stop myappcontainer || true
+            sudo docker rm myappcontainer || true
+            sudo docker pull $REGISTRY/$REPOSITORY:$IMAGE_TAG
+            sudo docker run -d --name myappcontainer -p 80:80 $REGISTRY/$REPOSITORY:$IMAGE_TAG
